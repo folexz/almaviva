@@ -54,7 +54,7 @@
   * Там же в [Aez'e](https://aeza.net/?ref=552661) можно просто купить VPN, и сделать профиль с Российским IP-адресом - стоимость самого дешевого тарифа €1.9/мес. (есть оплата РФ картами)
 
 ## Что используется
-* Python 3.8+
+* Python 3.13+
 * [Google Chrome](https://www.google.com/chrome/)
   * В скрипте сделана завязка на локальный путь `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`.
 * Сервис [2Captcha](https://2captcha.com/?from=25995218/)
