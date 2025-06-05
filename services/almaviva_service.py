@@ -123,13 +123,24 @@ class AlmavivaService:
         )
         info("Входим в учетную запись")
         resp = tab.Runtime.evaluate(expression=expr, awaitPromise=True)
-        data = resp.get("result", {}).get("value", {}) or {}
 
-        raw = resp["result"]["value"]
-        json_data = json.loads(raw)
+        result_value = resp.get("result", {}).get("value")
+        if result_value is None:
+            raise Exception("Не удалось получить ответ при авторизации")
+
+        if isinstance(result_value, str):
+            try:
+                json_data = json.loads(result_value)
+            except json.JSONDecodeError as e:
+                raise Exception(f"Некорректный JSON при авторизации: {e}")
+        elif isinstance(result_value, dict):
+            json_data = result_value
+        else:
+            raise Exception("Неизвестный формат ответа при авторизации")
+
         # Сохраняем токен в сервисе
         self.token = json_data.get("accessToken")
-        if json_data:
+        if self.token:
             info("Вход в учетную запись прошел успешно")
             return json_data
         else:
