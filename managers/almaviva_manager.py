@@ -8,7 +8,7 @@
 - отправляет уведомление и завершает сессию.
 """
 
-from services.almaviva_service import AlmavivaService, BASE_URL
+from services.almaviva_service import AlmavivaService, BASE_URL, STATUS_MAPPING
 from services.captcha_service import CaptchaService
 from services.chrome_service import ChromeService
 from services.telegram_service import TelegramService
@@ -23,7 +23,7 @@ class AlmavivaManager:
         self.chrome_service = ChromeService()
         self.telegram_service = TelegramService()
 
-    def run(self):
+    def run(self, mode="availability"):
         try:
             # Подключаемся к браузеру Chrome через CDP
             self.chrome_service.connect()
@@ -56,12 +56,26 @@ class AlmavivaManager:
                 # Инъекция полученных куки в браузер для сессии
                 self.chrome_service.inject_cookies(login_data)
 
-            # Проверяем доступность визовых слотов на сайте
-            is_available = self.almaviva_service.check_availability(
-                self.chrome_service.tab
-            )
-            # Отправляем уведомление о результате проверки
-            self.telegram_service.send_telegram_message(is_available)
+            if mode == "availability":
+                # Проверяем доступность визовых слотов на сайте
+                is_available = self.almaviva_service.check_availability(
+                    self.chrome_service.tab
+                )
+                # Отправляем уведомление о результате проверки
+                self.telegram_service.send_telegram_message(is_available)
+            elif mode == "status":
+                # Получаем статус заявления
+                status_code, site_name = self.almaviva_service.get_application_status(
+                    self.chrome_service.tab
+                )
+                status_text = STATUS_MAPPING.get(status_code, status_code)
+                if status_text.endswith("г. "):
+                    status_text += site_name
+                elif status_text.endswith("г."):
+                    status_text += " " + site_name
+                self.telegram_service.send_status_message(status_text)
+            else:
+                raise Exception("Неизвестный режим работы")
             # Завершаем сессию браузера и CDP
             self.chrome_service.finish()
         except Exception as e:

@@ -22,8 +22,11 @@ from managers.process_manager import ProcessManager
 class ScheduleManager:
     # Основная задача, выполняемая по расписанию
     @staticmethod
-    def job():
-        info(f'Проверяем места в Almaviva г. {os.getenv("CITY_NAME")}')
+    def job(mode="availability"):
+        if mode == "availability":
+            info(f'Проверяем места в Almaviva г. {os.getenv("CITY_NAME")}')
+        else:
+            info('Проверяем статус заявления в Almaviva')
 
         pm = None
         # Подготовка ProcessManager для запуска процессов
@@ -34,8 +37,7 @@ class ScheduleManager:
             pm.start()
             # Создаем менеджера Almaviva для проверки мест
             almaviva = AlmavivaManager()
-            # Выполняем основной рабочий процесс проверки мест
-            almaviva.run()
+            almaviva.run(mode)
         # Игнорируем специфичные ошибки CDP при выполнении
         except CallMethodException as e:
             pass

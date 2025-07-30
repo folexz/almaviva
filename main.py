@@ -23,13 +23,18 @@ if __name__ == "__main__":
     # Заполняем переменные окружения значениями по умолчанию, если они не заданы
     EnvironmentManager.fill_default_values()
 
-    # Планируем выполнение задачи
-    time_interval = os.getenv("CHECK_INTERVAL")
-    schedule.every(int(time_interval)).minutes.do(ScheduleManager.job)
+    print("\nВыберите режим работы:")
+    print("  1: Проверка слотов")
+    print("  2: Проверка статуса заявления")
+    choice = input("Ваш выбор (1-2): ").strip()
 
-    # Запускаем бесконечный цикл для обработки запланированных задач
-    while True:
-        schedule.run_pending()
-        # Проверяем, есть ли задачи, которые нужно выполнить в текущий момент
-        time.sleep(1)
-        # Ждём 1 секунду, чтобы не перегружать процессор
+    if choice == "1":
+        time_interval = os.getenv("CHECK_INTERVAL")
+        schedule.every(int(time_interval)).minutes.do(ScheduleManager.job, "availability")
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
+    elif choice == "2":
+        ScheduleManager.job("status")
+    else:
+        print("Неверный выбор")
