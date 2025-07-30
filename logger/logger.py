@@ -58,7 +58,7 @@ def telegram(msg: str, *args, **kwargs):
     """Public function to send a single message via the 'public' Telegram bot."""
     text = msg.format(*args, **kwargs) if (args or kwargs) else msg
 
-    url = f"https://api.telegram.org/bot{os.getenv("TELEGRAM_BOT_TOKEN")}/sendMessage"
+    url = f'https://api.telegram.org/bot{os.getenv("TELEGRAM_BOT_TOKEN")}/sendMessage'
     payload = {"chat_id": os.getenv("TELEGRAM_CHAT_ID"), "text": text}
 
     try:

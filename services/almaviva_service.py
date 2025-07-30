@@ -19,6 +19,23 @@ BASE_URL = "https://ru.almaviva-visa.services"
 LOGIN_URL = f"{BASE_URL}/api/login"
 AVAILABILITY_URL = f"{BASE_URL}/api/getDisponibilityi?siteId="
 
+# Маппинг статусов заявлений на человеко-читаемые сообщения
+STATUS_MAPPING = {
+    "IS_HUB_SP": "Ваши документы получены в центральном операционном офисе",
+    "IS_CONS": "Ваши документы находятся на рассмотрении в Генеральном консульстве Италии в Москве",
+    "TREATMENT": "Ваше визовое заявление обрабатывается в Визовом центре в г. ",
+    "OS_SP_HUB": "Ваши документы находятся в пути в центральный операционный офис",
+    "OS_HUB_CR": "Ваш паспорт передан в курьерскую службу",
+    "IS_HUB": "Ваш паспорт готов к отправке в Визовый центр в г. ",
+    "CANCELLED": "Ваша запись отменена.",
+    "CREATED": "Ваша запись была создана в Визовом центре в г.",
+    "OS_CONS_HUB": "Ваше визовое заявление рассмотрено, паспорт передан в центральный операционный офис",
+    "IS_SP": "Ваш паспорт готов к получению в Визовом центре в г. ",
+    "OS_HUB_SP": "Ваш паспорт находится в пути в Визовый центр в г. ",
+    "OS_SP_CLI": "Ваш паспорт был получен в Визовом центре в г. ",
+    "OS_HUB_CONS": "Ваши документы переданы в Генеральное консульство Италии в Москве",
+}
+
 
 class AlmavivaService:
     """Сервис для вызовов API Almaviva."""
@@ -165,3 +182,47 @@ class AlmavivaService:
             return result
         else:
             raise Exception(f"При получении мест для г. {self.city_name} произошла ошибка")
+
+    # Получение статуса визового заявления
+    def get_application_status(self, tab):
+        # Заголовки для запроса профиля
+        self.headers["Referer"] = f"{BASE_URL}/profile/group"
+        self.headers["Accept-Language"] = "ru"
+
+        # Получаем id пользователя
+        expr_profile = self._build_fetch_expression(
+            f"{BASE_URL}/api/user/profile", return_type="json"
+        )
+        resp = tab.Runtime.evaluate(expression=expr_profile, awaitPromise=True)
+        value = resp.get("result", {}).get("value")
+        if value is None:
+            raise Exception("Не удалось получить профиль пользователя")
+        if isinstance(value, str):
+            profile_data = json.loads(value)
+        else:
+            profile_data = value
+        user_id = profile_data.get("id")
+        if not user_id:
+            raise Exception("В ответе профиля нет id пользователя")
+
+        # Получаем список заявлений по id пользователя
+        expr_group = self._build_fetch_expression(
+            f"{BASE_URL}/api/group/client/{user_id}", return_type="json"
+        )
+        resp_group = tab.Runtime.evaluate(expression=expr_group, awaitPromise=True)
+        value = resp_group.get("result", {}).get("value")
+        if value is None:
+            raise Exception("Не удалось получить список заявлений")
+        if isinstance(value, str):
+            groups = json.loads(value)
+        else:
+            groups = value
+        if not groups:
+            raise Exception("Ответ по заявлениям пуст")
+        first = groups[0]
+        site_name = first.get("site", {}).get("name", "")
+        folders = first.get("folders", [])
+        if not folders:
+            raise Exception("Не найдены данные о статусе заявления")
+        status_code = folders[0].get("status", "")
+        return status_code, site_name
